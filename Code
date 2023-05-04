@@ -1,0 +1,81 @@
+https://learn.microsoft.com/en-us/training/modules/introduction-to-data-streaming/3b-understand-windows
+#Implement a data streaming solution with Azure Stream Analytics
+
+#Understand window functions
+
+#Tumbling windows
+#Tumbling window functions segment a data stream into a contiguous series of fixed-size, non-overlapping time segments and operate against them
+#Events can't belong to more than one tumbling window
+#The Tumbling window example, represented by the following query, finds the maximum reading value in each one-minute window
+#The GROUP BY clause in the following query contains the TumblingWindow() function, which specifies a one-minute window size.
+#Windowing functions are applied in Stream Analytics jobs using the GROUP BY clause of the query syntax.
+
+SELECT DateAdd(minute,-1,System.TimeStamp) AS WindowStart,
+       System.TimeStamp() AS WindowEnd,
+       MAX(Reading) AS MaxReading
+INTO
+    [output]
+FROM
+    [input] TIMESTAMP BY EventProcessedUtcTime
+GROUP BY TumblingWindow(minute, 1)
+
+#Hopping windows
+#Hopping window functions model scheduled overlapping windows, jumping forward in time by a fixed period
+#The following query demonstrates using a HoppingWindow() where the timeunit is set to second.
+#The windowsize is 60 seconds, and the hopsize is 30 seconds.
+#This query outputs an event every 30 seconds containing the maximum reading value that occurred over the last 60 seconds.
+
+SELECT DateAdd(second,-60,System.TimeStamp) AS WindowStart,
+       System.TimeStamp() AS WindowEnd,
+       MAX(Reading) AS MaxReading
+INTO
+    [output]
+FROM
+    [input] TIMESTAMP BY EventProcessedUtcTime
+GROUP BY HoppingWindow(second, 60, 30)
+
+#Sliding windows
+
+#Sliding windows generate events for points in time when the content of the window actually changes. This function model limits the number of windows that need to be considered
+#The following query uses the SlidingWindow() function to find the maximum reading value in each one-minute window in which an event occurred.
+
+SELECT DateAdd(minute,-1,System.TimeStamp) AS WindowStart,
+       System.TimeStamp() AS WindowEnd,
+       MAX(Reading) AS MaxReading
+INTO
+    [output]
+FROM
+    [input] TIMESTAMP BY EventProcessedUtcTime
+GROUP BY SlidingWindow(minute, 1)
+
+#Session window
+
+#Session window functions cluster together events that arrive at similar times, filtering out periods of time where there's no data. It has three primary parameters: timeout, maximum duration, and partitioning key (optional).
+#The following query measures user session length by creating a SessionWindow over clickstream data with a timeoutsize of 20 seconds and a maximumdurationsize of 60 seconds.
+
+SELECT DateAdd(second,-60,System.TimeStamp) AS WindowStart,
+       System.TimeStamp() AS WindowEnd,
+       MAX(Reading) AS MaxReading
+INTO
+    [output]
+FROM
+    [input] TIMESTAMP BY EventProcessedUtcTime
+GROUP BY SessionWindow(second, 20, 60)
+
+#Snapshot window
+
+#Snapshot windows groups events by identical timestamp values. Unlike other windowing types, a specific window function isn't required
+#You can employ a snapshot window by specifying the System.Timestamp() function to your query's GROUP BY clause
+#For example, the following query finds the maximum reading value for events that occur at precisely the same time.
+
+SELECT System.TimeStamp() AS WindowTime,
+       MAX(Reading) AS MaxReading
+INTO
+    [output]
+FROM
+    [input] TIMESTAMP BY EventProcessedUtcTime
+GROUP BY System.Timestamp()
+
+
+
+
